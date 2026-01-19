@@ -1,0 +1,228 @@
+{
+  "id": "332f7ac5-c30f-44aa-991a-aff51b05038a",
+  "revision": 0,
+  "last_node_id": 11,
+  "last_link_id": 23,
+  "nodes": [
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "pos": [
+        -995.2686869379813,
+        -900.085362824885
+      ],
+      "size": [
+        307.71608573059484,
+        376.3846820054604
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {},
+      "widgets_values": [
+        "# ComfyUI-VoxCPM\n\n**VoxCPM**  a novel tokenizer-free TTS system for context-aware speech generation and true-to-life voice cloning.\n\n## Models\nThis node automatically downloads the required model files.\n\n| Model | Hugging Face Link |\n|:---|:---|\n| **VoxCPM1.5** | [openbmb/VoxCPM1.5](https://huggingface.co/openbmb/VoxCPM1.5) |\n| VoxCPM-0.5B  | [openbmb/VoxCPM-0.5B](https://huggingface.co/openbmb/VoxCPM-0.5B) |\n\n\n## Support \n\n- Don't know how to update PyTorch?\n- Need help with ComfyUI?\n- Need technical support?\n\n### Or do you just have questions? Then join the [@TokenDiffusion Hub](https://t.me/TokenDiff_hub) group\n\n### AI news [TokenDiffusion](https://t.me/TokenDiff)"
+      ],
+      "color": "#233",
+      "bgcolor": "#355"
+    },
+    {
+      "id": 6,
+      "type": "MarkdownNote",
+      "pos": [
+        -1840.9210205078125,
+        -874.2627563476562
+      ],
+      "size": [
+        360.7866516113281,
+        348.9750061035156
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "## 🎤 Achieving High-Quality Voice Clones\n\nTo achieve the best voice cloning results, providing an accurate `prompt_text` is **critical**. This text acts as a transcript that aligns the sound of the `prompt_audio` with the words being spoken, teaching the model the speaker's unique vocal characteristics.\n\n### How to Use `prompt_text` Effectively\n\n#### 1. **Provide a Verbatim Transcript**\nThe `prompt_text` must be a word-for-word transcript of the `prompt_audio`. Do not summarize or describe the audio.\n\n✅ **Correct:** `The quick brown fox jumps over the lazy dog.`\n\n❌ **Incorrect:** `A person saying a sentence about a fox.`\n\n#### 2. **Punctuation is Important**\nUse accurate punctuation to capture the speaker's intonation. The model learns how the speaker ends sentences, asks questions, or shows excitement.\n\n-   **For a statement:** `This is a great example.`\n-   **For a question:** `Is this a great example?`\n-   **For excitement:** `This is a great example!`\n\n#### 3. **Match Audio and Text Length**\nThe audio clip should be long enough to capture the speaker's natural pacing and rhythm.\n\n👍 **Good:** A 5-15 second clip of continuous, clear speech.\n\n👌 **Okay:** A 3-5 second clip.\n\n⚠️ **Warning:** Very short clips (< 3 seconds) may result in a less stable or robotic-sounding clone.\n\n\n> **Note:**\n> For the best results, use a clean, high-quality `prompt_audio` with minimal background noise, reverb, or music. The model will try to clone the *entire* acoustic environment, not just the voice."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 2,
+      "type": "LoadAudio",
+      "pos": [
+        -1850.7180397727268,
+        -1064.4113325639207
+      ],
+      "size": [
+        350.4437255859375,
+        136
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.52",
+        "Node name for S&R": "LoadAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "audio": true,
+            "audioUI": true,
+            "upload": true
+          },
+          "version": "7.0.1"
+        }
+      },
+      "widgets_values": [
+        "male_stewie.mp3",
+        null,
+        null
+      ]
+    },
+    {
+      "id": 11,
+      "type": "VoxCPM_TTS",
+      "pos": [
+        -1438.1444091796875,
+        -1058.956787109375
+      ],
+      "size": [
+        399.5867768595042,
+        527.4710743801652
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 22
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Generated Audio",
+          "type": "AUDIO",
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-VoxCPM",
+        "ver": "788f117f9db15ef8a0110a8529fb252a556b34cf",
+        "Node name for S&R": "VoxCPM_TTS"
+      },
+      "widgets_values": [
+        "VoxCPM1.5",
+        "None",
+        "You're baking with ingredients from the Realm of Madness?! I am… impressed. And deeply concerned.",
+        2,
+        50,
+        8,
+        3000,
+        true,
+        42,
+        "fixed",
+        false,
+        "cuda",
+        3,
+        5,
+        "Hope I'm not bothering you. Just doing some stretching. Maybe a few poses. You'll tell me if I'm bothering you, right?"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 1,
+      "type": "SaveAudio",
+      "pos": [
+        -991.1134643554688,
+        -1058.956787109375
+      ],
+      "size": [
+        277.3636474609375,
+        112
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 23
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.52",
+        "Node name for S&R": "SaveAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "filename_prefix": true,
+            "audioUI": true
+          },
+          "version": "7.0.1"
+        }
+      },
+      "widgets_values": [
+        "audio/VoxCPM"
+      ]
+    }
+  ],
+  "links": [
+    [
+      22,
+      2,
+      0,
+      11,
+      0,
+      "AUDIO"
+    ],
+    [
+      23,
+      11,
+      0,
+      1,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.1,
+      "offset": [
+        2121.6271306818185,
+        1256.2295143821025
+      ]
+    },
+    "workflowRendererVersion": "LG",
+    "frontendVersion": "1.33.10",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
