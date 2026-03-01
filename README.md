@@ -2,6 +2,8 @@
 
 ComfyUI nodes for **VoxCPM** text-to-speech with voice cloning and LoRA training support.
 
+[![Patreon](https://img.shields.io/badge/Patreon-Support%20Me-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/Machinedelusions)
+
 ## Features
 
 - **VoxCPM 1.5** - 44.1kHz high-fidelity TTS with 800M parameters
