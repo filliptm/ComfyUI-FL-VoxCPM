@@ -297,18 +297,17 @@ def run_lora_training(
                 
                 pbar.update(1)
             
-            if step % 10 == 0:
-                lr_val = optimizer.param_groups[0]['lr']
-                print(f"Step {step}/{max_steps}, Loss: {total_loss_val:.4f}, LR: {lr_val:.8f}")
-                loss_history.append({"step": step, "loss": total_loss_val, "lr": lr_val})
-                send_training_update(node_id, {
-                    "type": "progress",
-                    "step": step,
-                    "max_steps": max_steps,
-                    "loss": total_loss_val,
-                    "lr": lr_val,
-                    "loss_history": loss_history,
-                })
+            lr_val = optimizer.param_groups[0]['lr']
+            logger.info(f"Step {step}/{max_steps}, Loss: {total_loss_val:.4f}, LR: {lr_val:.8f}")
+            loss_history.append({"step": step, "loss": total_loss_val, "lr": lr_val})
+            send_training_update(node_id, {
+                "type": "progress",
+                "step": step,
+                "max_steps": max_steps,
+                "loss": total_loss_val,
+                "lr": lr_val,
+                "loss_history": loss_history,
+            })
 
             if (step + 1) % save_every_steps == 0 or (step + 1) == max_steps:
                 save_path = os.path.join(output_dir, f"{output_name}_step_{step+1}.safetensors")
