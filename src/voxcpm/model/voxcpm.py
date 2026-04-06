@@ -19,6 +19,7 @@ limitations under the License.
 """
 
 import os
+import logging
 from typing import Tuple, Union, Generator, List, Optional
 
 import torch
@@ -48,6 +49,8 @@ from voxcpm.modules.locdit import CfmConfig, UnifiedCFM, VoxCPMLocDiT
 from voxcpm.modules.locenc import VoxCPMLocEnc
 from voxcpm.modules.minicpm4 import MiniCPM4Config, MiniCPMModel
 from voxcpm.model.utils import get_dtype, mask_multichar_chinese_tokens
+
+logger = logging.getLogger(__name__)
 
 
 class VoxCPMEncoderConfig(BaseModel):
@@ -238,7 +241,7 @@ class VoxCPMModel(nn.Module):
         # Check actual model device
         model_device = next(self.parameters()).device
         if model_device.type != "cuda":
-            print("Skipping torch.compile optimization as model is not on a CUDA device.")
+            logger.info("Skipping torch.compile optimization as model is not on a CUDA device.")
             return self
 
         try:
@@ -248,7 +251,7 @@ class VoxCPMModel(nn.Module):
             self.feat_encoder = torch.compile(self.feat_encoder, mode="reduce-overhead", fullgraph=True)
             self.feat_decoder.estimator = torch.compile(self.feat_decoder.estimator, mode="reduce-overhead", fullgraph=True)
         except Exception as e:
-            print(f"Warning: torch.compile disabled - {e}")
+            logger.warning(f"torch.compile disabled - {e}")
         return self
 
     def _dtype(self):
@@ -505,7 +508,7 @@ class VoxCPMModel(nn.Module):
                 latent_pred, pred_audio_feat = next(inference_result)
                 if retry_badcase:
                     if pred_audio_feat.shape[0] >= target_text_length * retry_badcase_ratio_threshold:
-                        print(f"  Badcase detected, audio_text_ratio={pred_audio_feat.shape[0] / target_text_length}, retrying...")
+                        logger.info(f"Badcase detected, audio_text_ratio={pred_audio_feat.shape[0] / target_text_length}, retrying...")
                         retry_badcase_times += 1
                         continue
                     else:
@@ -697,7 +700,7 @@ class VoxCPMModel(nn.Module):
                 latent_pred, pred_audio_feat = next(inference_result)
                 if retry_badcase:
                     if pred_audio_feat.shape[0] >= target_text_length * retry_badcase_ratio_threshold:
-                        print(f"  Badcase detected, audio_text_ratio={pred_audio_feat.shape[0] / target_text_length}, retrying...")
+                        logger.info(f"Badcase detected, audio_text_ratio={pred_audio_feat.shape[0] / target_text_length}, retrying...")
                         retry_badcase_times += 1
                         continue
                     else:
@@ -866,10 +869,10 @@ class VoxCPMModel(nn.Module):
         pytorch_model_path = os.path.join(path, "pytorch_model.bin")
         
         if os.path.exists(safetensors_path) and SAFETENSORS_AVAILABLE:
-            print(f"Loading model from safetensors: {safetensors_path}")
+            logger.info(f"Loading model from safetensors: {safetensors_path}")
             model_state_dict = load_file(safetensors_path)
         elif os.path.exists(pytorch_model_path):
-            print(f"Loading model from pytorch_model.bin: {pytorch_model_path}")
+            logger.info(f"Loading model from pytorch_model.bin: {pytorch_model_path}")
             checkpoint = torch.load(
                 pytorch_model_path,
                 map_location="cpu",
