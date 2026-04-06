@@ -6,7 +6,7 @@ import folder_paths
 import comfy.model_management as model_management
 from comfy_api.latest import io, ui
 
-from ..modules.model_info import AVAILABLE_VOXCPM_MODELS
+from ..modules.model_info import AVAILABLE_VOXCPM_MODELS, V2_MODEL_NAMES
 from ..modules.loader import VoxCPMModelHandler, detect_lora_rank
 from ..modules.patcher import VoxCPMPatcher
 
@@ -110,6 +110,10 @@ class FL_VoxCPM_TTS(io.ComfyNode):
         prompt_audio: Optional[io.Audio.Type] = None,
         prompt_text: Optional[str] = None,
     ) -> io.NodeOutput:
+
+        # Guard: V2 models must use the V2 TTS node
+        if model_name in V2_MODEL_NAMES:
+            raise ValueError(f"'{model_name}' is a V2 model. Please use the FL VoxCPM V2 TTS node instead.")
 
         is_cloning = prompt_audio is not None
         if is_cloning and prompt_text is None:

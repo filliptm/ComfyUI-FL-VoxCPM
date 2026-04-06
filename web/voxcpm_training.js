@@ -206,6 +206,94 @@ const TRAINING_WIDGET_STYLES = `
     border-left-color: var(--success);
     color: var(--success);
   }
+
+  /* Validation Audio Carousel */
+  .voxcpm-preview-section {
+    background: var(--bg-elevated);
+    border-radius: 6px;
+    padding: 8px 10px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .voxcpm-preview-header {
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    flex-shrink: 0;
+  }
+
+  .voxcpm-preview-carousel {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: center;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-hover) transparent;
+  }
+
+  .voxcpm-preview-carousel::-webkit-scrollbar {
+    height: 4px;
+  }
+  .voxcpm-preview-carousel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .voxcpm-preview-carousel::-webkit-scrollbar-thumb {
+    background: var(--border-hover);
+    border-radius: 2px;
+  }
+
+  .voxcpm-preview-empty {
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .voxcpm-preview-tile {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .voxcpm-play-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-dark);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .voxcpm-play-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .voxcpm-play-btn.playing {
+    border-color: var(--success);
+    color: var(--success);
+    animation: voxcpm-pulse 1.5s infinite;
+  }
+
+  .voxcpm-preview-tile .tile-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+  }
 `;
 
 // ---------------------------------------------------------------------------
@@ -292,6 +380,13 @@ class TrainingWidget {
         <div class="voxcpm-status">
           Ready to train
         </div>
+
+        <div class="voxcpm-preview-section">
+          <div class="voxcpm-preview-header">Validation Samples</div>
+          <div class="voxcpm-preview-carousel">
+            <div class="voxcpm-preview-empty">Audio samples will appear at each checkpoint</div>
+          </div>
+        </div>
       </div>
     `;
 
@@ -374,6 +469,76 @@ class TrainingWidget {
     this.updateStatus(`Training complete! Saved to: ${finalPath}`, "success");
   }
 
+  addValidationAudio(audioBase64, checkpointPath) {
+    const carousel = this.element.querySelector(".voxcpm-preview-carousel");
+    if (!carousel) return;
+
+    // Clear placeholder on first sample
+    const empty = carousel.querySelector(".voxcpm-preview-empty");
+    if (empty) empty.remove();
+
+    // Extract step label from checkpoint path
+    const parts = checkpointPath.replace(/\\/g, "/").split("/");
+    const filename = parts[parts.length - 1] || "";
+    const stepMatch = filename.match(/step_(\d+)/);
+    const shortLabel = stepMatch ? `S${stepMatch[1]}` : filename;
+
+    // Create tile
+    const tile = document.createElement("div");
+    tile.className = "voxcpm-preview-tile";
+
+    const audio = document.createElement("audio");
+    audio.src = audioBase64;
+    audio.preload = "auto";
+
+    const playBtn = document.createElement("button");
+    playBtn.className = "voxcpm-play-btn";
+    playBtn.innerHTML = "&#9654;"; // play triangle
+
+    playBtn.addEventListener("click", () => {
+      // Stop any other playing audio in this carousel
+      carousel.querySelectorAll("audio").forEach((a) => {
+        if (a !== audio) {
+          a.pause();
+          a.currentTime = 0;
+        }
+      });
+      carousel.querySelectorAll(".voxcpm-play-btn").forEach((b) => {
+        if (b !== playBtn) {
+          b.classList.remove("playing");
+          b.innerHTML = "&#9654;";
+        }
+      });
+
+      if (audio.paused) {
+        audio.play();
+        playBtn.classList.add("playing");
+        playBtn.innerHTML = "&#9646;&#9646;"; // pause
+      } else {
+        audio.pause();
+        playBtn.classList.remove("playing");
+        playBtn.innerHTML = "&#9654;";
+      }
+    });
+
+    audio.addEventListener("ended", () => {
+      playBtn.classList.remove("playing");
+      playBtn.innerHTML = "&#9654;";
+    });
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "tile-label";
+    labelEl.textContent = shortLabel;
+
+    tile.appendChild(playBtn);
+    tile.appendChild(audio);
+    tile.appendChild(labelEl);
+    carousel.appendChild(tile);
+
+    // Auto-scroll to newest
+    carousel.scrollLeft = carousel.scrollWidth;
+  }
+
   reset() {
     this.lossHistory = [];
     this.isTraining = false;
@@ -392,6 +557,12 @@ class TrainingWidget {
 
     this.updateStatus("Starting training...");
     this.drawChart();
+
+    // Clear audio carousel
+    const carousel = this.element.querySelector(".voxcpm-preview-carousel");
+    if (carousel) {
+      carousel.innerHTML = '<div class="voxcpm-preview-empty">Audio samples will appear at each checkpoint</div>';
+    }
   }
 
   drawChart() {
@@ -603,6 +774,9 @@ api.addEventListener("voxcpm.training.progress", (event) => {
     case "checkpoint":
       if (detail.checkpoint_path) {
         widget.updateStatus(`Checkpoint saved: ${detail.checkpoint_path}`, "success");
+      }
+      if (detail.validation_audio && detail.checkpoint_path) {
+        widget.addValidationAudio(detail.validation_audio, detail.checkpoint_path);
       }
       break;
 

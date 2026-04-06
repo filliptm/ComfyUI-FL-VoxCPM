@@ -1,11 +1,13 @@
 import os
 import re
+import json
 import tempfile
 import torch
 import numpy as np
 from typing import Generator, Optional
 from huggingface_hub import snapshot_download
 from voxcpm.model.voxcpm import VoxCPMModel, LoRAConfig
+from voxcpm.model.voxcpm2 import VoxCPM2Model
 
 class VoxCPM:
     def __init__(self,
@@ -33,9 +35,21 @@ class VoxCPM:
                 enable_dit=True,
                 enable_proj=False,
             )
-            # print(f"[ComfyUI-VoxCPM] Auto-created default LoRAConfig for loading weights from: {lora_weights_path}")
-        
-        self.tts_model = VoxCPMModel.from_local(voxcpm_model_path, optimize=optimize, lora_config=lora_config)
+
+        # Determine model type from config.json architecture field
+        config_path = os.path.join(voxcpm_model_path, "config.json")
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        arch = config.get("architecture", "voxcpm").lower()
+
+        if arch == "voxcpm2":
+            self.tts_model = VoxCPM2Model.from_local(voxcpm_model_path, optimize=optimize, lora_config=lora_config)
+        elif arch == "voxcpm":
+            self.tts_model = VoxCPMModel.from_local(voxcpm_model_path, optimize=optimize, lora_config=lora_config)
+        else:
+            raise ValueError(f"Unsupported VoxCPM architecture: {arch}")
+
+        self.is_v2 = isinstance(self.tts_model, VoxCPM2Model)
         
         # Load LoRA weights if path is provided
         # todo: add logger
@@ -106,13 +120,16 @@ class VoxCPM:
     def generate_streaming(self, *args, **kwargs) -> Generator[np.ndarray, None, None]:
         return self._generate(*args, streaming=True, **kwargs)
 
-    def _generate(self, 
+    def _generate(self,
             text : str,
             prompt_wav_path : str = None,
             prompt_waveform: torch.Tensor = None, # Added for ComfyUI
             prompt_sample_rate: int = None,       # Added for ComfyUI
             prompt_text : str = None,
-            cfg_value : float = 2.0,    
+            reference_wav_path : str = None,      # V2 only: voice cloning reference
+            reference_waveform: torch.Tensor = None, # V2 only: ComfyUI tensor variant
+            reference_sample_rate: int = None,       # V2 only: ComfyUI tensor variant
+            cfg_value : float = 2.0,
             inference_timesteps : int = 10,
             min_len : int = 2,
             max_len : int = 4096,
@@ -123,43 +140,81 @@ class VoxCPM:
             retry_badcase_ratio_threshold : float = 6.0,
             streaming: bool = False,
         ) -> Generator[np.ndarray, None, None]:
-        
+
         if not text.strip() or not isinstance(text, str):
             raise ValueError("target text must be a non-empty string")
-        
+
         if prompt_wav_path is not None and not os.path.exists(prompt_wav_path):
             raise FileNotFoundError(f"prompt_wav_path does not exist: {prompt_wav_path}")
-        
+
+        if reference_wav_path is not None and not os.path.exists(reference_wav_path):
+            raise FileNotFoundError(f"reference_wav_path does not exist: {reference_wav_path}")
+
+        has_reference = (reference_wav_path is not None) or (reference_waveform is not None)
+        if has_reference and not self.is_v2:
+            raise ValueError("reference audio is only supported with VoxCPM2 models. Use the FL VoxCPM V2 TTS node.")
+
         if prompt_text is not None and not prompt_text.strip():
             prompt_text = None
 
         has_prompt_audio = (prompt_wav_path is not None) or (prompt_waveform is not None)
-        
+
         if has_prompt_audio and prompt_text is None:
             raise ValueError("prompt_text is required when providing prompt audio (path or waveform).")
-        
+
         text = text.replace("\n", " ")
         text = re.sub(r'\s+', ' ', text)
-        
-        temp_prompt_wav_path = None
-        
+
+        temp_files = []
+
         try:
-            if has_prompt_audio and prompt_text is not None:
-                if denoise and self.denoiser is not None and prompt_wav_path is not None:
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
-                        temp_prompt_wav_path = tmp_file.name
-                    self.denoiser.enhance(prompt_wav_path, output_path=temp_prompt_wav_path)
-                    prompt_wav_path = temp_prompt_wav_path
-                
-                fixed_prompt_cache = self.tts_model.build_prompt_cache(
-                    prompt_text=prompt_text,
-                    prompt_wav_path=prompt_wav_path,
-                    prompt_waveform=prompt_waveform,
-                    prompt_sample_rate=prompt_sample_rate
-                )
+            actual_prompt_path = prompt_wav_path
+            actual_ref_path = reference_wav_path
+
+            # Handle denoising for file-based paths
+            if denoise and self.denoiser is not None:
+                if prompt_wav_path is not None:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
+                        temp_files.append(tmp.name)
+                    self.denoiser.enhance(prompt_wav_path, output_path=temp_files[-1])
+                    actual_prompt_path = temp_files[-1]
+                if reference_wav_path is not None:
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
+                        temp_files.append(tmp.name)
+                    self.denoiser.enhance(reference_wav_path, output_path=temp_files[-1])
+                    actual_ref_path = temp_files[-1]
+
+            # Handle reference waveform (V2 ComfyUI path) — save to temp file
+            if reference_waveform is not None and actual_ref_path is None:
+                import torchaudio
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
+                    temp_files.append(tmp.name)
+                ref_wav = reference_waveform
+                if ref_wav.dim() == 1:
+                    ref_wav = ref_wav.unsqueeze(0)
+                torchaudio.save(tmp.name, ref_wav.cpu(), reference_sample_rate or self.tts_model.sample_rate)
+                actual_ref_path = tmp.name
+
+            # Build prompt cache
+            has_any_audio = (actual_prompt_path is not None) or (prompt_waveform is not None) or (actual_ref_path is not None)
+
+            if has_any_audio:
+                if self.is_v2:
+                    fixed_prompt_cache = self.tts_model.build_prompt_cache(
+                        prompt_text=prompt_text,
+                        prompt_wav_path=actual_prompt_path,
+                        reference_wav_path=actual_ref_path,
+                    )
+                else:
+                    fixed_prompt_cache = self.tts_model.build_prompt_cache(
+                        prompt_text=prompt_text,
+                        prompt_wav_path=actual_prompt_path,
+                        prompt_waveform=prompt_waveform,
+                        prompt_sample_rate=prompt_sample_rate
+                    )
             else:
-                fixed_prompt_cache = None  # will be built from the first inference
-            
+                fixed_prompt_cache = None
+
             # Text Normalization
             if normalize:
                 if self.text_normalizer is None:
@@ -167,36 +222,34 @@ class VoxCPM:
                         from voxcpm.utils.text_normalize import TextNormalizer
                         self.text_normalizer = TextNormalizer()
                     except ImportError:
-                        print("[ComfyUI-VoxCPM] Warning: wetext dependency not found. Normalization skipped.")
-                        # Mock the normalizer if import fails
                         class MockNormalizer:
                             def normalize(self, t): return t
                         self.text_normalizer = MockNormalizer()
-                        
                 text = self.text_normalizer.normalize(text)
-            
+
             generate_result = self.tts_model._generate_with_prompt_cache(
-                            target_text=text,
-                            prompt_cache=fixed_prompt_cache,
-                            min_len=min_len,
-                            max_len=max_len,
-                            inference_timesteps=inference_timesteps,
-                            cfg_value=cfg_value,
-                            retry_badcase=retry_badcase,
-                            retry_badcase_max_times=retry_badcase_max_times,
-                            retry_badcase_ratio_threshold=retry_badcase_ratio_threshold,
-                            streaming=streaming,
-                        )
-        
+                target_text=text,
+                prompt_cache=fixed_prompt_cache,
+                min_len=min_len,
+                max_len=max_len,
+                inference_timesteps=inference_timesteps,
+                cfg_value=cfg_value,
+                retry_badcase=retry_badcase,
+                retry_badcase_max_times=retry_badcase_max_times,
+                retry_badcase_ratio_threshold=retry_badcase_ratio_threshold,
+                streaming=streaming,
+            )
+
             for wav, _, _ in generate_result:
                 yield wav.squeeze(0).cpu().numpy()
-        
+
         finally:
-            if temp_prompt_wav_path and os.path.exists(temp_prompt_wav_path):
-                try:
-                    os.unlink(temp_prompt_wav_path)
-                except OSError:
-                    pass
+            for tmp_path in temp_files:
+                if tmp_path and os.path.exists(tmp_path):
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
 
     # ------------------------------------------------------------------ #
     # LoRA Interface

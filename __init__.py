@@ -78,21 +78,27 @@ for search_path in voxcpm_search_paths:
 
 from .nodes import (
     FL_VoxCPM_TTS,
+    FL_VoxCPM_V2_TTS,
     FL_VoxCPM_TrainConfig,
+    FL_VoxCPM_V2_TrainConfig,
     FL_VoxCPM_DatasetMaker,
     FL_VoxCPM_LoRATrainer,
 )
 
 NODE_CLASS_MAPPINGS = {
     "FL_VoxCPM_TTS": FL_VoxCPM_TTS,
+    "FL_VoxCPM_V2_TTS": FL_VoxCPM_V2_TTS,
     "FL_VoxCPM_TrainConfig": FL_VoxCPM_TrainConfig,
+    "FL_VoxCPM_V2_TrainConfig": FL_VoxCPM_V2_TrainConfig,
     "FL_VoxCPM_DatasetMaker": FL_VoxCPM_DatasetMaker,
     "FL_VoxCPM_LoRATrainer": FL_VoxCPM_LoRATrainer,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "FL_VoxCPM_TTS": "FL VoxCPM TTS",
+    "FL_VoxCPM_V2_TTS": "FL VoxCPM V2 TTS",
     "FL_VoxCPM_TrainConfig": "FL VoxCPM Train Config",
+    "FL_VoxCPM_V2_TrainConfig": "FL VoxCPM V2 Train Config",
     "FL_VoxCPM_DatasetMaker": "FL VoxCPM Dataset Maker",
     "FL_VoxCPM_LoRATrainer": "FL VoxCPM LoRA Trainer",
 }
@@ -102,4 +108,4 @@ WEB_DIRECTORY = "./web"
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 print("\033[92m[ComfyUI-FL-VoxCPM] Loaded successfully!\033[0m")
-print("\033[92m[ComfyUI-FL-VoxCPM] Nodes available: TTS, Train Config, Dataset Maker, LoRA Trainer\033[0m")
+print("\033[92m[ComfyUI-FL-VoxCPM] Nodes available: TTS, V2 TTS, Train Config, V2 Train Config, Dataset Maker, LoRA Trainer\033[0m")
