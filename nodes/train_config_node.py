@@ -3,6 +3,8 @@ from comfy_api.latest import io
 
 logger = logging.getLogger(__name__)
 
+VoxCPMTrainConfig = io.Custom("VOXCPM_TRAIN_CONFIG")
+
 
 class FL_VoxCPM_TrainConfig(io.ComfyNode):
     CATEGORY = "FL/VoxCPM/Training"
@@ -29,7 +31,7 @@ class FL_VoxCPM_TrainConfig(io.ComfyNode):
                 io.Boolean.Input("enable_proj_lora", default=False, tooltip="Apply LoRA to projection layers."),
             ],
             outputs=[
-                io.AnyType.Output(display_name="Train Config"),
+                VoxCPMTrainConfig.Output(display_name="Train Config"),
             ],
         )
 

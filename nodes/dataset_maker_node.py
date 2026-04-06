@@ -5,6 +5,8 @@ from ..modules.dataset_utils import create_jsonl_dataset
 
 logger = logging.getLogger(__name__)
 
+VoxCPMDataset = io.Custom("VOXCPM_DATASET")
+
 
 class FL_VoxCPM_DatasetMaker(io.ComfyNode):
     CATEGORY = "FL/VoxCPM/Training"
@@ -21,7 +23,7 @@ class FL_VoxCPM_DatasetMaker(io.ComfyNode):
                 io.String.Input("output_filename", default="train.jsonl", tooltip="Name of the output JSONL file."),
             ],
             outputs=[
-                io.String.Output(display_name="Dataset Path"),
+                VoxCPMDataset.Output(display_name="Dataset Path"),
             ],
         )
 

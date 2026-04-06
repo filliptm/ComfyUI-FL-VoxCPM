@@ -97,7 +97,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FL_VoxCPM_LoRATrainer": "FL VoxCPM LoRA Trainer",
 }
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+WEB_DIRECTORY = "./web"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 print("\033[92m[ComfyUI-FL-VoxCPM] Loaded successfully!\033[0m")
 print("\033[92m[ComfyUI-FL-VoxCPM] Nodes available: TTS, Train Config, Dataset Maker, LoRA Trainer\033[0m")

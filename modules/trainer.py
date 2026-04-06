@@ -26,7 +26,21 @@ try:
 except ImportError:
     SAFETENSORS_AVAILABLE = False
 
+try:
+    from server import PromptServer
+    WEBSOCKET_AVAILABLE = True
+except ImportError:
+    WEBSOCKET_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
+
+
+def send_training_update(node_id, data):
+    if WEBSOCKET_AVAILABLE and PromptServer.instance is not None and node_id is not None:
+        PromptServer.instance.send_sync(
+            "voxcpm.training.progress",
+            {"node": str(node_id), **data},
+        )
 
 def resolve_model_path(base_model_name: str, folder_paths_module):
     """Resolves the pretrained path for a given model name, downloading if official and missing."""
@@ -58,19 +72,22 @@ def run_lora_training(
     save_every_steps: int,
     num_workers: int,
     output_name: str,
-    folder_paths_module
+    folder_paths_module,
+    node_id=None,
 ):
     """
     Executes the LoRA training loop.
     """
-    
+
     torch.set_grad_enabled(True)
-    
+
     logger.info(f"Training Environment Check - Grad Enabled: {torch.is_grad_enabled()}, Inference Mode: {torch.is_inference_mode_enabled()}")
-    
+
+    send_training_update(node_id, {"type": "status", "message": "Resolving model path..."})
+
     pretrained_path = resolve_model_path(base_model_name, folder_paths_module)
     os.makedirs(output_dir, exist_ok=True)
-    
+
     with open(os.path.join(output_dir, "train_config.json"), 'w') as f:
         json.dump({**train_config, "base_model": base_model_name}, f, indent=2)
 
@@ -78,7 +95,7 @@ def run_lora_training(
     model_management.soft_empty_cache()
 
     accelerator = Accelerator(amp=True)
-    
+
     lora_cfg = LoRAConfig(
         enable_lm=train_config.get("enable_lm_lora", True),
         enable_dit=train_config.get("enable_dit_lora", True),
@@ -88,6 +105,7 @@ def run_lora_training(
         dropout=train_config.get("lora_dropout", 0.0),
     )
 
+    send_training_update(node_id, {"type": "status", "message": "Loading base model..."})
     logger.info(f"Loading base model from {pretrained_path}...")
     base_model = VoxCPMModel.from_local(
         pretrained_path, 
@@ -113,6 +131,7 @@ def run_lora_training(
 
     tokenizer = base_model.text_tokenizer
 
+    send_training_update(node_id, {"type": "status", "message": "Loading dataset..."})
     logger.info("Loading dataset...")
     train_ds, _ = load_audio_text_datasets(
         train_manifest=dataset_path,
@@ -163,14 +182,16 @@ def run_lora_training(
         num_training_steps=max_steps,
     )
 
+    send_training_update(node_id, {"type": "status", "message": "Starting training..."})
     logger.info("Starting training...")
     pbar = ProgressBar(max_steps)
     pbar.update(0)
-    
+
     train_iter = iter(train_loader)
     data_epoch = 0
     grad_accum_steps = train_config.get("grad_accum_steps", 1)
     lambdas = {"loss/diff": 1.0, "loss/stop": 1.0}
+    loss_history = []
 
     def get_next_batch():
         nonlocal train_iter, data_epoch
@@ -247,6 +268,15 @@ def run_lora_training(
             if step % 10 == 0:
                 lr_val = optimizer.param_groups[0]['lr']
                 print(f"Step {step}/{max_steps}, Loss: {total_loss_val:.4f}, LR: {lr_val:.8f}")
+                loss_history.append({"step": step, "loss": total_loss_val, "lr": lr_val})
+                send_training_update(node_id, {
+                    "type": "progress",
+                    "step": step,
+                    "max_steps": max_steps,
+                    "loss": total_loss_val,
+                    "lr": lr_val,
+                    "loss_history": loss_history,
+                })
 
             if (step + 1) % save_every_steps == 0 or (step + 1) == max_steps:
                 save_path = os.path.join(output_dir, f"{output_name}_step_{step+1}.safetensors")
@@ -268,8 +298,19 @@ def run_lora_training(
                     json.dump(lora_info, f, indent=2)
                 
                 logger.info(f"Saved checkpoint: {save_path}")
+                send_training_update(node_id, {
+                    "type": "checkpoint",
+                    "step": step + 1,
+                    "checkpoint_path": save_path,
+                })
 
     del model, optimizer, scheduler, train_loader, base_model
     model_management.soft_empty_cache()
-    
+
+    send_training_update(node_id, {
+        "type": "complete",
+        "final_path": output_dir,
+        "total_steps": max_steps,
+    })
+
     return output_dir

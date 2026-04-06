@@ -7,6 +7,9 @@ from ..modules.model_info import AVAILABLE_VOXCPM_MODELS
 
 logger = logging.getLogger(__name__)
 
+VoxCPMTrainConfig = io.Custom("VOXCPM_TRAIN_CONFIG")
+VoxCPMDataset = io.Custom("VOXCPM_DATASET")
+
 # The training module imports 'argbind' and 'datasets'.
 # We wrap this so the main inference node works without them.
 TRAINING_IMPORT_ERROR = None
@@ -43,11 +46,12 @@ class FL_VoxCPM_LoRATrainer(io.ComfyNode):
             node_id="FL_VoxCPM_LoRATrainer",
             display_name="FL VoxCPM LoRA Trainer",
             category=cls.CATEGORY,
-            description="Trains a LoRA adapter for VoxCPM. WARNING: This process takes time and blocks the UI.",
+            description="Trains a LoRA adapter for VoxCPM.",
+            is_output_node=True,
             inputs=[
                 io.Combo.Input("base_model_name", options=model_names, default=model_names[0], tooltip="Base VoxCPM model to fine-tune."),
-                io.AnyType.Input("train_config", tooltip="Configuration dictionary from VoxCPM Train Config node."),
-                io.String.Input("dataset_path", default="", tooltip="Path to the train.jsonl file."),
+                VoxCPMTrainConfig.Input("train_config", tooltip="Configuration dictionary from VoxCPM Train Config node."),
+                VoxCPMDataset.Input("dataset_path", tooltip="Path to the train.jsonl file from VoxCPM Dataset Maker."),
                 io.String.Input("output_name", default="my_lora_v1", tooltip="Name of the subfolder in 'models/loras' to save results."),
                 io.Int.Input("max_steps", default=1000, min=100, max=100000, tooltip="Total number of training steps."),
                 io.Int.Input("save_every_steps", default=200, min=50, max=5000, tooltip="Save checkpoint every N steps."),
@@ -56,6 +60,7 @@ class FL_VoxCPM_LoRATrainer(io.ComfyNode):
             outputs=[
                 io.String.Output(display_name="LoRA Output Path"),
             ],
+            hidden=[io.Hidden.unique_id],
         )
 
     @classmethod
@@ -63,6 +68,8 @@ class FL_VoxCPM_LoRATrainer(io.ComfyNode):
         # Guard: Check if training module loaded successfully
         if run_lora_training is None:
             raise RuntimeError(f"Training functionality unavailable. {TRAINING_IMPORT_ERROR}")
+
+        node_id = cls.hidden.unique_id
 
         # Determine output directory using ComfyUI's standard paths
         lora_base_dir = folder_paths.get_folder_paths("loras")[0]
@@ -79,7 +86,8 @@ class FL_VoxCPM_LoRATrainer(io.ComfyNode):
                 save_every_steps=save_every_steps,
                 num_workers=num_workers,
                 output_name=output_name,
-                folder_paths_module=folder_paths  # Pass folder_paths to resolve official models
+                folder_paths_module=folder_paths,
+                node_id=node_id,
             )
             return io.NodeOutput(final_output_dir)
         except Exception as e:
