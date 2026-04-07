@@ -68,6 +68,19 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
     """Generate a validation audio sample and return base64-encoded WAV."""
     import torchaudio
     was_training = model.training
+    device = next(model.parameters()).device
+
+    # Temporarily move VAE to GPU for decoding
+    vae_was_on_cpu = False
+    if hasattr(model, 'audio_vae') and model.audio_vae is not None:
+        vae_device = next(model.audio_vae.parameters()).device
+        if vae_device != device:
+            model.audio_vae.to(device)
+            vae_was_on_cpu = True
+    else:
+        logger.warning(f"Validation skipped at step {step}: audio_vae not available on model.")
+        return None
+
     model.eval()
     try:
         with torch.no_grad():
@@ -90,6 +103,9 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
     finally:
         if was_training:
             model.train()
+        # Move VAE back to CPU to free VRAM
+        if vae_was_on_cpu and hasattr(model, 'audio_vae') and model.audio_vae is not None:
+            model.audio_vae.cpu()
 
 
 @torch.inference_mode(False)
@@ -195,8 +211,13 @@ def run_lora_training(
         dataset_cnt=dataset_cnt,
         device=accelerator.device,
     )
-    
-    del base_model.audio_vae
+
+    # Keep VAE on CPU for validation audio generation instead of deleting it
+    if validation_text:
+        audio_vae_ref = base_model.audio_vae.cpu()
+        base_model.audio_vae = audio_vae_ref
+    else:
+        del base_model.audio_vae
     
     model = accelerator.prepare_model(base_model)
     unwrapped_model = accelerator.unwrap(model)
@@ -337,7 +358,6 @@ def run_lora_training(
                     "checkpoint_path": save_path,
                 }
                 if validation_text:
-                    from ..src.voxcpm.core import VoxCPM
                     audio_b64 = _run_validation_audio(
                         unwrapped_model, validation_text, validation_steps,
                         train_config.get("sample_rate", 44100),

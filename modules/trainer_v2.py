@@ -37,6 +37,19 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
     """Generate a validation audio sample from V2 model."""
     import torchaudio
     was_training = model.training
+    device = next(model.parameters()).device
+
+    # Temporarily move VAE to GPU for decoding
+    vae_was_on_cpu = False
+    if hasattr(model, 'audio_vae') and model.audio_vae is not None:
+        vae_device = next(model.audio_vae.parameters()).device
+        if vae_device != device:
+            model.audio_vae.to(device)
+            vae_was_on_cpu = True
+    else:
+        logger.warning(f"V2 validation skipped at step {step}: audio_vae not available on model.")
+        return None
+
     model.eval()
     try:
         with torch.no_grad():
@@ -59,6 +72,8 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
     finally:
         if was_training:
             model.train()
+        if vae_was_on_cpu and hasattr(model, 'audio_vae') and model.audio_vae is not None:
+            model.audio_vae.cpu()
 
 
 @torch.inference_mode(False)
@@ -162,7 +177,12 @@ def run_lora_training_v2(
         device=accelerator.device,
     )
 
-    del base_model.audio_vae
+    # Keep VAE on CPU for validation audio generation instead of deleting it
+    if validation_text:
+        audio_vae_ref = base_model.audio_vae.cpu()
+        base_model.audio_vae = audio_vae_ref
+    else:
+        del base_model.audio_vae
 
     model = accelerator.prepare_model(base_model)
     unwrapped_model = accelerator.unwrap(model)
