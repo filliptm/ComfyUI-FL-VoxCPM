@@ -124,9 +124,14 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
         torchaudio.save(save_path, wav_tensor, sample_rate)
 
-        buf = _io.BytesIO()
-        torchaudio.save(buf, wav_tensor, sample_rate, format="wav")
-        audio_b64 = f"data:audio/wav;base64,{base64.b64encode(buf.getvalue()).decode()}"
+        # Encode to base64 via temp file (torchaudio can't write wav to BytesIO)
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+            tmp_path = tmp.name
+        torchaudio.save(tmp_path, wav_tensor, sample_rate)
+        with open(tmp_path, 'rb') as f:
+            audio_b64 = f"data:audio/wav;base64,{base64.b64encode(f.read()).decode()}"
+        os.unlink(tmp_path)
         return audio_b64
     except Exception as e:
         logger.warning(f"Validation audio generation failed at step {step}: {e}")
