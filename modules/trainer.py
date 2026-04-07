@@ -69,6 +69,7 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
     import torchaudio
     was_training = model.training
     device = next(model.parameters()).device
+    original_dtype = next(model.parameters()).dtype
 
     # Temporarily move VAE to GPU for decoding
     vae_was_on_cpu = False
@@ -81,14 +82,14 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         logger.warning(f"Validation skipped at step {step}: audio_vae not available on model.")
         return None
 
-    # Ensure VAE matches the model dtype (model may be bf16 from training)
-    model_dtype = next(model.parameters()).dtype
-    if hasattr(model, 'audio_vae') and model.audio_vae is not None:
-        model.audio_vae.to(dtype=model_dtype)
-
     model.eval()
     try:
-        with torch.no_grad(), torch.amp.autocast('cuda', dtype=torch.bfloat16):
+        # Convert entire model to float32 for inference.
+        # generate() internally creates tensors with dtype=float32, so the model
+        # must also be float32 to avoid dtype mismatches during index_put, matmul, etc.
+        model.to(torch.float32)
+
+        with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
             wav = model.generate(
                 target_text=validation_text,
                 inference_timesteps=validation_steps,
@@ -105,13 +106,17 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         return audio_b64
     except Exception as e:
         logger.warning(f"Validation audio generation failed at step {step}: {e}")
+        import traceback
+        traceback.print_exc()
         return None
     finally:
+        # Restore original dtype and training state
+        model.to(original_dtype)
         if was_training:
             model.train()
         # Move VAE back to CPU to free VRAM
         if vae_was_on_cpu and hasattr(model, 'audio_vae') and model.audio_vae is not None:
-            model.audio_vae.cpu()
+            model.audio_vae.to(device='cpu', dtype=torch.float32)
 
 
 @torch.inference_mode(False)
