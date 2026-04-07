@@ -77,7 +77,12 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
                 cfg_value=2.0,
             )
 
-        wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
+        if isinstance(wav, torch.Tensor):
+            wav_tensor = wav.float().cpu()
+        else:
+            wav_tensor = torch.from_numpy(wav).float()
+        if wav_tensor.dim() == 1:
+            wav_tensor = wav_tensor.unsqueeze(0)
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
         torchaudio.save(save_path, wav_tensor, sample_rate)
 
