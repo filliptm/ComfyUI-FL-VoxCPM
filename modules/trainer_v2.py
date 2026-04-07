@@ -66,7 +66,11 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.float())
 
-        with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
+        original_config_dtype = getattr(model.config, 'dtype', None)
+        if hasattr(model, 'config') and hasattr(model.config, 'dtype'):
+            model.config.dtype = "float32"
+
+        with torch.no_grad(), torch.amp.autocast('cuda', enabled=False), torch.amp.autocast('cpu', enabled=False):
             wav = model.generate(
                 target_text=validation_text,
                 inference_timesteps=validation_steps,
@@ -87,6 +91,8 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
         traceback.print_exc()
         return None
     finally:
+        if original_config_dtype is not None and hasattr(model, 'config') and hasattr(model.config, 'dtype'):
+            model.config.dtype = original_config_dtype
         model.to(original_dtype)
         for param in model.parameters():
             param.data = param.data.to(original_dtype)

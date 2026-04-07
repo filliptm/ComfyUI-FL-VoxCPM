@@ -102,14 +102,12 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.float())
 
-        # Log dtype state for debugging
-        sample_param = next(model.parameters())
-        logger.info(f"Validation dtype check: param={sample_param.dtype}, device={device}")
-        logger.info(f"Validation autocast enabled: cuda={torch.is_autocast_enabled('cuda')}, cpu={torch.is_autocast_enabled('cpu')}")
+        # Override model's config dtype to match the float32 inference
+        original_config_dtype = getattr(model.config, 'dtype', None)
+        if hasattr(model, 'config') and hasattr(model.config, 'dtype'):
+            model.config.dtype = "float32"
 
-        # Explicitly disable ALL autocast contexts
         with torch.no_grad(), torch.amp.autocast('cuda', enabled=False), torch.amp.autocast('cpu', enabled=False):
-            logger.info(f"Inside no-autocast: cuda={torch.is_autocast_enabled('cuda')}")
             wav = model.generate(
                 target_text=validation_text,
                 inference_timesteps=validation_steps,
@@ -131,6 +129,8 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         return None
     finally:
         # Restore original dtype and training state
+        if original_config_dtype is not None and hasattr(model, 'config') and hasattr(model.config, 'dtype'):
+            model.config.dtype = original_config_dtype
         model.to(original_dtype)
         for param in model.parameters():
             param.data = param.data.to(original_dtype)
