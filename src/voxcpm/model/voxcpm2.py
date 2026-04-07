@@ -37,6 +37,8 @@ try:
 except ImportError:
     SAFETENSORS_AVAILABLE = False
 from tqdm import tqdm
+import comfy.model_management as model_management
+from comfy.utils import ProgressBar
 from transformers import LlamaTokenizerFast
 
 from ..modules.audiovae import AudioVAEV2, AudioVAEConfigV2
@@ -1036,47 +1038,57 @@ class VoxCPM2Model(nn.Module):
         self.residual_lm.kv_cache.fill_caches(residual_kv_cache_tuple)
         residual_hidden = residual_enc_outputs[:, -1, :]
 
-        for i in tqdm(range(max_len)):
-            dit_hidden_1 = self.lm_to_dit_proj(lm_hidden)  # [b, h_dit]
-            dit_hidden_2 = self.res_to_dit_proj(residual_hidden)  # [b, h_dit]
-            dit_hidden = torch.cat((dit_hidden_1, dit_hidden_2), dim=-1)
+        pbar_comfy = ProgressBar(max_len)
+        pbar_tqdm = tqdm(range(max_len), desc="VoxCPM V2 Sampling")
 
-            pred_feat = self.feat_decoder(
-                mu=dit_hidden,
-                patch_size=self.patch_size,
-                cond=prefix_feat_cond.transpose(1, 2).contiguous(),
-                n_timesteps=inference_timesteps,
-                cfg_value=cfg_value,
-            ).transpose(
-                1, 2
-            )  # [b, p, d]
+        try:
+            for i in pbar_tqdm:
+                model_management.throw_exception_if_processing_interrupted()
 
-            curr_embed = self.feat_encoder(pred_feat.unsqueeze(1))  # b, 1, c
-            curr_embed = self.enc_to_lm_proj(curr_embed)
+                dit_hidden_1 = self.lm_to_dit_proj(lm_hidden)  # [b, h_dit]
+                dit_hidden_2 = self.res_to_dit_proj(residual_hidden)  # [b, h_dit]
+                dit_hidden = torch.cat((dit_hidden_1, dit_hidden_2), dim=-1)
 
-            pred_feat_seq.append(pred_feat.unsqueeze(1))  # b, 1, p, d
-            prefix_feat_cond = pred_feat
+                pred_feat = self.feat_decoder(
+                    mu=dit_hidden,
+                    patch_size=self.patch_size,
+                    cond=prefix_feat_cond.transpose(1, 2).contiguous(),
+                    n_timesteps=inference_timesteps,
+                    cfg_value=cfg_value,
+                ).transpose(
+                    1, 2
+                )  # [b, p, d]
 
-            if streaming:
-                # return the last three predicted latent features to provide enough context for smooth decoding
-                pred_feat_chunk = torch.cat(pred_feat_seq[-streaming_prefix_len:], dim=1)
-                feat_pred = rearrange(pred_feat_chunk, "b t p d -> b d (t p)", b=B, p=self.patch_size)
+                curr_embed = self.feat_encoder(pred_feat.unsqueeze(1))  # b, 1, c
+                curr_embed = self.enc_to_lm_proj(curr_embed)
 
-                yield feat_pred, pred_feat_seq
+                pred_feat_seq.append(pred_feat.unsqueeze(1))  # b, 1, p, d
+                prefix_feat_cond = pred_feat
 
-            stop_flag = self.stop_head(self.stop_actn(self.stop_proj(lm_hidden))).argmax(dim=-1)[0].cpu().item()
-            if i > min_len and stop_flag == 1:
-                break
+                if streaming:
+                    pred_feat_chunk = torch.cat(pred_feat_seq[-streaming_prefix_len:], dim=1)
+                    feat_pred = rearrange(pred_feat_chunk, "b t p d -> b d (t p)", b=B, p=self.patch_size)
 
-            lm_hidden = self.base_lm.forward_step(
-                curr_embed[:, 0, :], torch.tensor([self.base_lm.kv_cache.step()], device=curr_embed.device)
-            ).clone()
+                    yield feat_pred, pred_feat_seq
 
-            lm_hidden = self.fsq_layer(lm_hidden)
-            curr_residual_input = self.fusion_concat_proj(torch.cat((lm_hidden, curr_embed[:, 0, :]), dim=-1))
-            residual_hidden = self.residual_lm.forward_step(
-                curr_residual_input, torch.tensor([self.residual_lm.kv_cache.step()], device=curr_embed.device)
-            ).clone()
+                stop_flag = self.stop_head(self.stop_actn(self.stop_proj(lm_hidden))).argmax(dim=-1)[0].cpu().item()
+                if i > min_len and stop_flag == 1:
+                    pbar_comfy.update_absolute(max_len)
+                    break
+
+                lm_hidden = self.base_lm.forward_step(
+                    curr_embed[:, 0, :], torch.tensor([self.base_lm.kv_cache.step()], device=curr_embed.device)
+                ).clone()
+
+                lm_hidden = self.fsq_layer(lm_hidden)
+                curr_residual_input = self.fusion_concat_proj(torch.cat((lm_hidden, curr_embed[:, 0, :]), dim=-1))
+                residual_hidden = self.residual_lm.forward_step(
+                    curr_residual_input, torch.tensor([self.residual_lm.kv_cache.step()], device=curr_embed.device)
+                ).clone()
+
+                pbar_comfy.update(1)
+        finally:
+            pbar_tqdm.close()
 
         if not streaming:
             pred_feat_seq = torch.cat(pred_feat_seq, dim=1)  # b, t, p, d
