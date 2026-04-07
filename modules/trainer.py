@@ -81,24 +81,19 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         logger.warning(f"Validation skipped at step {step}: audio_vae not available on model.")
         return None
 
+    # Ensure VAE matches the model dtype (model may be bf16 from training)
+    model_dtype = next(model.parameters()).dtype
+    if hasattr(model, 'audio_vae') and model.audio_vae is not None:
+        model.audio_vae.to(dtype=model_dtype)
+
     model.eval()
     try:
-        # Use float32 context to avoid bfloat16/float32 dtype mismatch
-        # between model weights (bf16 from training) and VAE weights (fp32)
-        with torch.no_grad(), torch.amp.autocast('cuda', enabled=False):
-            # Temporarily cast model to float32 for clean inference
-            original_dtype = next(model.parameters()).dtype
-            if original_dtype != torch.float32:
-                model.float()
-            try:
-                wav = model.generate(
-                    target_text=validation_text,
-                    inference_timesteps=validation_steps,
-                    cfg_value=2.0,
-                )
-            finally:
-                if original_dtype != torch.float32:
-                    model.to(original_dtype)
+        with torch.no_grad(), torch.amp.autocast('cuda', dtype=torch.bfloat16):
+            wav = model.generate(
+                target_text=validation_text,
+                inference_timesteps=validation_steps,
+                cfg_value=2.0,
+            )
 
         wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
