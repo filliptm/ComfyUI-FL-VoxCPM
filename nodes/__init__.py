@@ -8,6 +8,8 @@ from .train_config_node import FL_VoxCPM_TrainConfig
 from .train_config_v2_node import FL_VoxCPM_V2_TrainConfig
 from .dataset_maker_node import FL_VoxCPM_DatasetMaker
 from .lora_trainer_node import FL_VoxCPM_LoRATrainer
+from .transcribe_node import FL_VoxCPM_Transcribe
+from .audio_crop_node import FL_VoxCPM_AudioCrop
 
 __all__ = [
     'FL_VoxCPM_TTS',
@@ -16,4 +18,6 @@ __all__ = [
     'FL_VoxCPM_V2_TrainConfig',
     'FL_VoxCPM_DatasetMaker',
     'FL_VoxCPM_LoRATrainer',
+    'FL_VoxCPM_Transcribe',
+    'FL_VoxCPM_AudioCrop',
 ]

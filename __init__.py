@@ -83,6 +83,8 @@ from .nodes import (
     FL_VoxCPM_V2_TrainConfig,
     FL_VoxCPM_DatasetMaker,
     FL_VoxCPM_LoRATrainer,
+    FL_VoxCPM_Transcribe,
+    FL_VoxCPM_AudioCrop,
 )
 
 NODE_CLASS_MAPPINGS = {
@@ -92,6 +94,8 @@ NODE_CLASS_MAPPINGS = {
     "FL_VoxCPM_V2_TrainConfig": FL_VoxCPM_V2_TrainConfig,
     "FL_VoxCPM_DatasetMaker": FL_VoxCPM_DatasetMaker,
     "FL_VoxCPM_LoRATrainer": FL_VoxCPM_LoRATrainer,
+    "FL_VoxCPM_Transcribe": FL_VoxCPM_Transcribe,
+    "FL_VoxCPM_AudioCrop": FL_VoxCPM_AudioCrop,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -101,6 +105,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FL_VoxCPM_V2_TrainConfig": "FL VoxCPM V2 Train Config",
     "FL_VoxCPM_DatasetMaker": "FL VoxCPM Dataset Maker",
     "FL_VoxCPM_LoRATrainer": "FL VoxCPM LoRA Trainer",
+    "FL_VoxCPM_Transcribe": "FL VoxCPM Transcribe",
+    "FL_VoxCPM_AudioCrop": "FL VoxCPM Audio Crop",
 }
 
 WEB_DIRECTORY = "./web"
