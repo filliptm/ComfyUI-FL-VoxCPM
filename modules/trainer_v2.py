@@ -65,6 +65,13 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
                     val = getattr(module, attr_name)
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.float())
+            # Convert KV cache tensors (StaticKVCache stores plain tensors)
+            if hasattr(module, 'kv_cache'):
+                kv = module.kv_cache
+                if isinstance(kv, torch.Tensor) and kv.is_floating_point():
+                    module.kv_cache = kv.float()
+                elif hasattr(kv, 'kv_cache') and isinstance(kv.kv_cache, torch.Tensor):
+                    kv.kv_cache = kv.kv_cache.float()
 
         original_config_dtype = getattr(model.config, 'dtype', None)
         if hasattr(model, 'config') and hasattr(model.config, 'dtype'):
@@ -113,6 +120,12 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
                     val = getattr(module, attr_name)
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.to(original_dtype))
+            if hasattr(module, 'kv_cache'):
+                kv = module.kv_cache
+                if isinstance(kv, torch.Tensor) and kv.is_floating_point():
+                    module.kv_cache = kv.to(original_dtype)
+                elif hasattr(kv, 'kv_cache') and isinstance(kv.kv_cache, torch.Tensor):
+                    kv.kv_cache = kv.kv_cache.to(original_dtype)
         if was_training:
             model.train()
         if vae_was_on_cpu and hasattr(model, 'audio_vae') and model.audio_vae is not None:

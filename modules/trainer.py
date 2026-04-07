@@ -101,6 +101,13 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
                     val = getattr(module, attr_name)
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.float())
+            # Convert KV cache tensors (StaticKVCache stores plain tensors)
+            if hasattr(module, 'kv_cache'):
+                kv = module.kv_cache
+                if isinstance(kv, torch.Tensor) and kv.is_floating_point():
+                    module.kv_cache = kv.float()
+                elif hasattr(kv, 'kv_cache') and isinstance(kv.kv_cache, torch.Tensor):
+                    kv.kv_cache = kv.kv_cache.float()
 
         # Override model's config dtype to match the float32 inference
         original_config_dtype = getattr(model.config, 'dtype', None)
@@ -153,6 +160,12 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
                     val = getattr(module, attr_name)
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.to(original_dtype))
+            if hasattr(module, 'kv_cache'):
+                kv = module.kv_cache
+                if isinstance(kv, torch.Tensor) and kv.is_floating_point():
+                    module.kv_cache = kv.to(original_dtype)
+                elif hasattr(kv, 'kv_cache') and isinstance(kv.kv_cache, torch.Tensor):
+                    kv.kv_cache = kv.kv_cache.to(original_dtype)
         if was_training:
             model.train()
         # Move VAE back to CPU to free VRAM
