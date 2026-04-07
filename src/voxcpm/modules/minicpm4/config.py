@@ -19,7 +19,7 @@ class MiniCPM4Config(BaseModel):
     num_hidden_layers: int
     num_key_value_heads: int
     rms_norm_eps: float
-    rope_scaling: RopeScalingConfig
+    rope_scaling: RopeScalingConfig = None
     vocab_size: int
     use_mup: bool = True
     scale_emb: float
@@ -27,3 +27,4 @@ class MiniCPM4Config(BaseModel):
     scale_depth: float
     rope_theta: float
     kv_channels: int = None
+    no_rope: bool = False

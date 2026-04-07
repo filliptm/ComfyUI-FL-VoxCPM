@@ -106,6 +106,7 @@ class FL_VoxCPM_V2_TTS(io.ComfyNode):
             node_id="FL_VoxCPM_V2_TTS",
             display_name="FL VoxCPM V2 TTS",
             category=cls.CATEGORY,
+            is_output_node=True,
             description="Generate speech using VoxCPM V2 with Voice Design, Voice Cloning, Controllable Cloning, and Ultimate Cloning modes.",
             inputs=[
                 io.Combo.Input("model_name", options=v2_names, default=v2_names[0], tooltip="Select a VoxCPM V2 model."),
