@@ -83,12 +83,23 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
 
     model.eval()
     try:
-        with torch.no_grad():
-            wav = model.generate(
-                target_text=validation_text,
-                inference_timesteps=validation_steps,
-                cfg_value=2.0,
-            )
+        # Use float32 context to avoid bfloat16/float32 dtype mismatch
+        # between model weights (bf16 from training) and VAE weights (fp32)
+        with torch.no_grad(), torch.amp.autocast('cuda', enabled=False):
+            # Temporarily cast model to float32 for clean inference
+            original_dtype = next(model.parameters()).dtype
+            if original_dtype != torch.float32:
+                model.float()
+            try:
+                wav = model.generate(
+                    target_text=validation_text,
+                    inference_timesteps=validation_steps,
+                    cfg_value=2.0,
+                )
+            finally:
+                if original_dtype != torch.float32:
+                    model.to(original_dtype)
+
         wav_tensor = torch.from_numpy(wav).float().unsqueeze(0)
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
         torchaudio.save(save_path, wav_tensor, sample_rate)
