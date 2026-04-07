@@ -87,19 +87,20 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
     try:
         # Convert entire model to float32 for inference.
         # generate() internally creates tensors with dtype=float32, so the model
-        # must also be float32 to avoid dtype mismatches during index_put, matmul, etc.
-        # Use both .to() and manual param conversion to handle accelerator-wrapped models.
+        # must also be float32 to avoid dtype mismatches.
         model.to(torch.float32)
         for param in model.parameters():
             param.data = param.data.float()
         for buf in model.buffers():
             buf.data = buf.data.float()
-        # Also convert any sub-modules that might cache their own dtype
+        # MiniCPM4's RotaryEmbedding reassigns cos_cached/sin_cached as plain tensors
+        # (overwriting registered buffers), so we must convert them explicitly.
         for module in model.modules():
-            if hasattr(module, 'weight') and module.weight is not None and not isinstance(module.weight, nn.Parameter):
-                module.weight = module.weight.float()
-            if hasattr(module, 'bias') and module.bias is not None and not isinstance(module.bias, nn.Parameter):
-                module.bias = module.bias.float()
+            for attr_name in ('cos_cached', 'sin_cached', 'inv_freq'):
+                if hasattr(module, attr_name):
+                    val = getattr(module, attr_name)
+                    if isinstance(val, torch.Tensor) and val.is_floating_point():
+                        setattr(module, attr_name, val.float())
 
         with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
             wav = model.generate(
@@ -128,6 +129,12 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
             param.data = param.data.to(original_dtype)
         for buf in model.buffers():
             buf.data = buf.data.to(original_dtype)
+        for module in model.modules():
+            for attr_name in ('cos_cached', 'sin_cached', 'inv_freq'):
+                if hasattr(module, attr_name):
+                    val = getattr(module, attr_name)
+                    if isinstance(val, torch.Tensor) and val.is_floating_point():
+                        setattr(module, attr_name, val.to(original_dtype))
         if was_training:
             model.train()
         # Move VAE back to CPU to free VRAM
