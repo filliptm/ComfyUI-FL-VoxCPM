@@ -102,7 +102,14 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
                     if isinstance(val, torch.Tensor) and val.is_floating_point():
                         setattr(module, attr_name, val.float())
 
-        with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
+        # Log dtype state for debugging
+        sample_param = next(model.parameters())
+        logger.info(f"Validation dtype check: param={sample_param.dtype}, device={device}")
+        logger.info(f"Validation autocast enabled: cuda={torch.is_autocast_enabled('cuda')}, cpu={torch.is_autocast_enabled('cpu')}")
+
+        # Explicitly disable ALL autocast contexts
+        with torch.no_grad(), torch.amp.autocast('cuda', enabled=False), torch.amp.autocast('cpu', enabled=False):
+            logger.info(f"Inside no-autocast: cuda={torch.is_autocast_enabled('cuda')}")
             wav = model.generate(
                 target_text=validation_text,
                 inference_timesteps=validation_steps,
