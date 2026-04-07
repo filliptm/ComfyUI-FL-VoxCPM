@@ -53,7 +53,10 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
 
     model.eval()
     try:
-        model.to(torch.float32)
+        for param in model.parameters():
+            param.data = param.data.to(torch.float32)
+        for buf_name, buf in model.named_buffers():
+            buf.data = buf.data.to(torch.float32)
 
         with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
             wav = model.generate(
@@ -76,7 +79,10 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
         traceback.print_exc()
         return None
     finally:
-        model.to(original_dtype)
+        for param in model.parameters():
+            param.data = param.data.to(original_dtype)
+        for buf_name, buf in model.named_buffers():
+            buf.data = buf.data.to(original_dtype)
         if was_training:
             model.train()
         if vae_was_on_cpu and hasattr(model, 'audio_vae') and model.audio_vae is not None:

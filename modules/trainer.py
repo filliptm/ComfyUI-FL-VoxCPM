@@ -87,7 +87,10 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         # Convert entire model to float32 for inference.
         # generate() internally creates tensors with dtype=float32, so the model
         # must also be float32 to avoid dtype mismatches during index_put, matmul, etc.
-        model.to(torch.float32)
+        for param in model.parameters():
+            param.data = param.data.to(torch.float32)
+        for buf_name, buf in model.named_buffers():
+            buf.data = buf.data.to(torch.float32)
 
         with torch.no_grad(), torch.amp.autocast(device.type, enabled=False):
             wav = model.generate(
@@ -111,7 +114,10 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         return None
     finally:
         # Restore original dtype and training state
-        model.to(original_dtype)
+        for param in model.parameters():
+            param.data = param.data.to(original_dtype)
+        for buf_name, buf in model.named_buffers():
+            buf.data = buf.data.to(original_dtype)
         if was_training:
             model.train()
         # Move VAE back to CPU to free VRAM
