@@ -272,7 +272,7 @@ class FL_VoxCPM_V2_TTS(io.ComfyNode):
                 max_len=max_tokens,
                 normalize=normalize_text,
                 retry_badcase=enable_retry,
-                retry_badcase_max_times=retry_max_attempts,
+                retry_badcase_max_times=max(retry_max_attempts, 1),
                 retry_badcase_ratio_threshold=retry_threshold,
                 denoise=False
             )
