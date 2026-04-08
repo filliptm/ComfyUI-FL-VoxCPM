@@ -28,7 +28,7 @@ class FL_VoxCPM_V2_TrainConfig(io.ComfyNode):
                 io.Float.Input("weight_decay", default=0.01, min=0.0, max=0.1, tooltip="Weight decay for regularization."),
                 io.Boolean.Input("enable_lm_lora", default=True, tooltip="Apply LoRA to the Language Model backbone."),
                 io.Boolean.Input("enable_dit_lora", default=True, tooltip="Apply LoRA to the Diffusion Transformer."),
-                io.Boolean.Input("enable_proj_lora", default=False, tooltip="Apply LoRA to projection layers."),
+                io.Boolean.Input("enable_proj_lora", default=True, tooltip="Apply LoRA to projection layers (includes fusion_concat_proj). Recommended for V2."),
             ],
             outputs=[
                 VoxCPMV2TrainConfig.Output(display_name="V2 Train Config"),
