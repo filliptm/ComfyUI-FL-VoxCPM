@@ -77,6 +77,11 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
         if hasattr(model, 'config') and hasattr(model.config, 'dtype'):
             model.config.dtype = "float32"
 
+        # Fixed seed for deterministic validation — same output per checkpoint for A/B comparison
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+
         with torch.no_grad(), torch.amp.autocast('cuda', enabled=False), torch.amp.autocast('cpu', enabled=False):
             wav = model.generate(
                 target_text=validation_text,
