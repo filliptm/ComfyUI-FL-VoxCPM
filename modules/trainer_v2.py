@@ -204,7 +204,7 @@ def run_lora_training_v2(
     logger.info("Loading dataset...")
     train_ds, _ = load_audio_text_datasets(
         train_manifest=dataset_path,
-        sample_rate=train_config.get("sample_rate", 48000),
+        sample_rate=train_config.get("sample_rate", 16000),
     )
 
     def tokenize(batch):

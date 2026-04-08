@@ -24,7 +24,7 @@ class FL_VoxCPM_V2_TrainConfig(io.ComfyNode):
                 io.Int.Input("warmup_steps", default=100, min=0, max=1000, tooltip="Number of warmup steps for learning rate scheduler."),
                 io.Int.Input("grad_accum_steps", default=8, min=1, max=64, tooltip="Gradient accumulation steps. Official default: 8 (effective batch=16 with batch_size=2)."),
                 io.Int.Input("max_batch_tokens", default=8192, min=1024, max=32768, tooltip="Maximum number of tokens per batch."),
-                io.Int.Input("sample_rate", default=48000, min=16000, max=48000, tooltip="Sample rate of training audio. V2 uses 48kHz."),
+                io.Int.Input("sample_rate", default=16000, min=16000, max=48000, tooltip="Sample rate for audio encoding. V2 AudioVAE encodes at 16kHz (decodes to 48kHz via super-resolution)."),
                 io.Float.Input("weight_decay", default=0.01, min=0.0, max=0.1, tooltip="Weight decay for regularization."),
                 io.Boolean.Input("enable_lm_lora", default=True, tooltip="Apply LoRA to the Language Model backbone (q/k/v/o projections)."),
                 io.Boolean.Input("enable_dit_lora", default=True, tooltip="Apply LoRA to the Diffusion Transformer (q/k/v/o projections)."),
