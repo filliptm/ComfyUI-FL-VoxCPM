@@ -331,7 +331,8 @@ def run_lora_training_v2(
                 if scaler is not None:
                     scaler.unscale_(optimizer)
 
-                torch.nn.utils.clip_grad_norm_(unwrapped_model.parameters(), max_norm=1.0)
+                # Official V2 uses max_norm=1e9 (effectively no clipping)
+                torch.nn.utils.clip_grad_norm_(unwrapped_model.parameters(), max_norm=1e9)
 
                 accelerator.step(optimizer)
                 accelerator.update()
