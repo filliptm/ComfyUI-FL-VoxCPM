@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 VOXCPM_V2_PATCHER_CACHE = {}
 
 V2_MODES = [
+    "Text to Speech",
     "Voice Design",
     "Voice Cloning",
     "Controllable Cloning",
@@ -171,7 +172,9 @@ class FL_VoxCPM_V2_TTS(io.ComfyNode):
         prompt_text_str = prompt_text.strip() if prompt_text else ""
 
         # Validate mode requirements
-        if mode == "Voice Design":
+        if mode == "Text to Speech":
+            pass  # No requirements — just text, optional LoRA
+        elif mode == "Voice Design":
             if not control:
                 raise ValueError("Voice Design mode requires 'control' text describing the desired voice.")
             if reference_audio is not None or prompt_audio is not None:
@@ -194,9 +197,9 @@ class FL_VoxCPM_V2_TTS(io.ComfyNode):
             if not prompt_text_str:
                 raise ValueError("Ultimate Cloning requires 'prompt_text' (transcript of prompt audio).")
 
-        # Build final text with control prefix
+        # Build final text with control prefix (only for modes that use it)
         final_text = text
-        if control:
+        if control and mode in ("Voice Design", "Controllable Cloning"):
             final_text = f"({control}){text}"
 
         # Device setup
