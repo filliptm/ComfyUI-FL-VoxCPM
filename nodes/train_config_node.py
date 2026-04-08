@@ -29,6 +29,7 @@ class FL_VoxCPM_TrainConfig(io.ComfyNode):
                 io.Boolean.Input("enable_lm_lora", default=True, tooltip="Apply LoRA to the Language Model backbone."),
                 io.Boolean.Input("enable_dit_lora", default=True, tooltip="Apply LoRA to the Diffusion Transformer."),
                 io.Boolean.Input("enable_proj_lora", default=False, tooltip="Apply LoRA to projection layers."),
+                io.Combo.Input("lr_scheduler", options=["cosine", "constant"], default="cosine", tooltip="LR schedule: 'cosine' decays to 0 over training, 'constant' keeps LR fixed after warmup."),
             ],
             outputs=[
                 VoxCPMTrainConfig.Output(display_name="Train Config"),

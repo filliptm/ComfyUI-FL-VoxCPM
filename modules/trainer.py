@@ -294,11 +294,13 @@ def run_lora_training(
         weight_decay=train_config.get("weight_decay", 0.01),
     )
 
-    scheduler = get_cosine_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=train_config.get("warmup_steps", 100),
-        num_training_steps=max_steps,
-    )
+    sched_type = train_config.get("lr_scheduler", "cosine")
+    warmup = train_config.get("warmup_steps", 100)
+    if sched_type == "constant":
+        from transformers import get_constant_schedule_with_warmup
+        scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=warmup)
+    else:
+        scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=warmup, num_training_steps=max_steps)
 
     send_training_update(node_id, {"type": "status", "message": "Starting training..."})
     logger.info("Starting training...")
