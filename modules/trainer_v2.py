@@ -379,9 +379,13 @@ def run_lora_training_v2(
                     "checkpoint_path": save_path,
                 }
                 if validation_text:
+                    # Use model's output sample rate (48kHz for V2), NOT the
+                    # training data encode rate (16kHz). generate() decodes
+                    # via audio_vae which outputs at out_sample_rate.
+                    val_sr = getattr(unwrapped_model, 'sample_rate', 48000)
                     audio_b64 = _run_validation_audio_v2(
                         unwrapped_model, validation_text, validation_steps,
-                        train_config.get("sample_rate", 48000),
+                        val_sr,
                         output_dir, step + 1, node_id
                     )
                     if audio_b64:
