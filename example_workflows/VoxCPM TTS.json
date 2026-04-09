@@ -1,0 +1,958 @@
+{
+  "id": "54e81aab-987a-4f8b-8f7c-29634a453131",
+  "revision": 0,
+  "last_node_id": 29,
+  "last_link_id": 42,
+  "nodes": [
+    {
+      "id": 8,
+      "type": "FL_VoxCPM_LoRATrainer",
+      "pos": [
+        1343.1921178081275,
+        -3300.61853813341
+      ],
+      "size": [
+        478.95754180455674,
+        699.0415070739682
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "train_config",
+          "type": "*",
+          "link": 8
+        },
+        {
+          "name": "dataset_path",
+          "type": "VOXCPM_DATASET",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LoRA Output Path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "39ee25558fa7a722831c96f8c4dfeb3e00f0c299",
+        "Node name for S&R": "FL_VoxCPM_LoRATrainer",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "VoxCPM1.5",
+        "my_lora_v1",
+        8000,
+        500,
+        0,
+        "Write your Validation text here for sample renders while training ",
+        10,
+        ""
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 2,
+      "type": "LoadAudio",
+      "pos": [
+        1041.4415366314622,
+        -2180.9520985185695
+      ],
+      "size": [
+        276.57872972220366,
+        136
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "LoadAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "00003.mp4",
+        null,
+        null
+      ]
+    },
+    {
+      "id": 1,
+      "type": "FL_VoxCPM_TTS",
+      "pos": [
+        1361.592498265977,
+        -2182.53470779379
+      ],
+      "size": [
+        400,
+        454
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "prompt_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Generated Audio",
+          "type": "AUDIO",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d45a14f24102ad6d317a0d31ce0d007020fc2379",
+        "Node name for S&R": "FL_VoxCPM_TTS",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "VoxCPM1.5",
+        "VoxCPM\\my_lora_v1\\my_lora_v1_step_7500.safetensors",
+        "VoxCPM is an innovative TTS model designed to generate highly expressive speech.",
+        2,
+        10,
+        2,
+        2048,
+        true,
+        473278734286603,
+        "randomize",
+        false,
+        "cuda",
+        3,
+        6,
+        ""
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 5,
+      "type": "FL_VoxCPM_DatasetMaker",
+      "pos": [
+        1040.8775996306522,
+        -3101.795410796913
+      ],
+      "size": [
+        267.46364273373285,
+        82
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "Dataset Path",
+          "type": "VOXCPM_DATASET",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d45a14f24102ad6d317a0d31ce0d007020fc2379",
+        "Node name for S&R": "FL_VoxCPM_DatasetMaker",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "G:\\My Drive\\AI\\Training Data\\AUDIO - Voices to clone\\GLaDoS\\chunks",
+        "train.jsonl"
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 28,
+      "type": "SaveAudioMP3",
+      "pos": [
+        3972.351640925645,
+        -2165.858550551092
+      ],
+      "size": [
+        384.03513738460106,
+        136
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 37
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "SaveAudioMP3",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "audio/ComfyUI",
+        "V0"
+      ]
+    },
+    {
+      "id": 29,
+      "type": "FL_VoxCPM_V2_TTS",
+      "pos": [
+        3464.1521833634556,
+        -2166.813839310542
+      ],
+      "size": [
+        418.60772345972373,
+        662.4824892464085
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "reference_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 41
+        },
+        {
+          "name": "prompt_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": 40
+        },
+        {
+          "name": "reference_text",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "reference_text"
+          },
+          "link": 38
+        },
+        {
+          "name": "prompt_text",
+          "shape": 7,
+          "type": "STRING",
+          "widget": {
+            "name": "prompt_text"
+          },
+          "link": 39
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Generated Audio",
+          "type": "AUDIO",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d23467d9b215a829cf363d4e66af3162ec76ea2f",
+        "Node name for S&R": "FL_VoxCPM_V2_TTS",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "VoxCPM2",
+        "None",
+        "Ultimate Cloning",
+        "I had ramen for breakfast dude, let’s do Italy for lunch.. maybe pop over to Argentina for some salsa on the way home",
+        2,
+        10,
+        2,
+        2048,
+        true,
+        603877665187982,
+        "randomize",
+        false,
+        "cuda",
+        3,
+        6,
+        "",
+        "",
+        ""
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 27,
+      "type": "FL_VoxCPM_Transcribe",
+      "pos": [
+        3152.8881257757944,
+        -1613.964506978811
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 42
+        }
+      ],
+      "outputs": [
+        {
+          "name": "transcription",
+          "type": "STRING",
+          "links": [
+            38,
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "0ba4338699221540531a13caea5e18c9085c4981",
+        "Node name for S&R": "FL_VoxCPM_Transcribe",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "openai/whisper-large-v3-turbo",
+        "auto",
+        "auto"
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 26,
+      "type": "LoadAudio",
+      "pos": [
+        3122.0523614831927,
+        -2166.4646802634734
+      ],
+      "size": [
+        276.57872972220366,
+        136
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": [
+            40,
+            41,
+            42
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "LoadAudio",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "Voicy_Throw a baseball 90mph (1).mp3",
+        null,
+        null
+      ]
+    },
+    {
+      "id": 9,
+      "type": "FL_VoxCPM_TrainConfig",
+      "pos": [
+        1039.980335247981,
+        -2948.821958930596
+      ],
+      "size": [
+        270,
+        346
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "Train Config",
+          "type": "VOXCPM_TRAIN_CONFIG",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "39ee25558fa7a722831c96f8c4dfeb3e00f0c299",
+        "Node name for S&R": "FL_VoxCPM_TrainConfig",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        0.00003,
+        128,
+        64,
+        0,
+        100,
+        1,
+        8192,
+        44100,
+        0.01,
+        true,
+        true,
+        false,
+        "cosine"
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 21,
+      "type": "FL_VoxCPM_V2_TrainConfig",
+      "pos": [
+        1907.4417905823063,
+        -2887.323365894917
+      ],
+      "size": [
+        283.6021484375,
+        346
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "V2 Train Config",
+          "type": "VOXCPM_V2_TRAIN_CONFIG",
+          "links": [
+            30
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d5606990d368fbb89913c6b1903ccc2bb4b73735",
+        "Node name for S&R": "FL_VoxCPM_V2_TrainConfig",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        0.0001,
+        128,
+        64,
+        0,
+        100,
+        8,
+        8192,
+        16000,
+        0,
+        true,
+        true,
+        false,
+        "constant"
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 19,
+      "type": "FL_VoxCPM_DatasetMaker",
+      "pos": [
+        1907.8021415722978,
+        -3278.2186335620627
+      ],
+      "size": [
+        297.4503430226961,
+        82
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "Dataset Path",
+          "type": "VOXCPM_DATASET",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d45a14f24102ad6d317a0d31ce0d007020fc2379",
+        "Node name for S&R": "FL_VoxCPM_DatasetMaker",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "G:\\My Drive\\AI\\Training Data\\AUDIO - Voices to clone\\Luke Peterson\\chunks",
+        "train.jsonl"
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 17,
+      "type": "FL_VoxCPM_LoRATrainer",
+      "pos": [
+        2272.8556912794475,
+        -3297.0113928828773
+      ],
+      "size": [
+        503.44627096688714,
+        761.8817714995121
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "train_config",
+          "type": "*",
+          "link": 30
+        },
+        {
+          "name": "dataset_path",
+          "type": "VOXCPM_DATASET",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LoRA Output Path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "39ee25558fa7a722831c96f8c4dfeb3e00f0c299",
+        "Node name for S&R": "FL_VoxCPM_LoRATrainer",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "VoxCPM2",
+        "Luke-Peterson-V1",
+        8000,
+        100,
+        0,
+        "Write your Validation text here for sample renders while training",
+        10,
+        ""
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 11,
+      "type": "SaveAudioMP3",
+      "pos": [
+        1809.3785329367415,
+        -2180.730835226769
+      ],
+      "size": [
+        270,
+        136
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 10
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "SaveAudioMP3",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "audio/ComfyUI",
+        "V0"
+      ]
+    },
+    {
+      "id": 13,
+      "type": "SaveAudioMP3",
+      "pos": [
+        2645.3702027781987,
+        -2163.4350559211657
+      ],
+      "size": [
+        384.03513738460106,
+        136
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 11
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.18.2",
+        "Node name for S&R": "SaveAudioMP3",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "audio/ComfyUI",
+        "V0"
+      ]
+    },
+    {
+      "id": 12,
+      "type": "FL_VoxCPM_V2_TTS",
+      "pos": [
+        2194.805938324578,
+        -2167.534082486538
+      ],
+      "size": [
+        418.60772345972373,
+        662.4824892464085
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "reference_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "prompt_audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Generated Audio",
+          "type": "AUDIO",
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "aux_id": "filliptm/ComfyUI-FL-VoxCPM",
+        "ver": "d23467d9b215a829cf363d4e66af3162ec76ea2f",
+        "Node name for S&R": "FL_VoxCPM_V2_TTS",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "VoxCPM2",
+        "None",
+        "Text to Speech",
+        "",
+        2,
+        10,
+        2,
+        2048,
+        true,
+        879616648185805,
+        "randomize",
+        false,
+        "cuda",
+        3,
+        6,
+        "",
+        "",
+        ""
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      1,
+      0,
+      "AUDIO"
+    ],
+    [
+      7,
+      5,
+      0,
+      8,
+      1,
+      "VOXCPM_DATASET"
+    ],
+    [
+      8,
+      9,
+      0,
+      8,
+      0,
+      "VOXCPM_TRAIN_CONFIG"
+    ],
+    [
+      10,
+      1,
+      0,
+      11,
+      0,
+      "AUDIO"
+    ],
+    [
+      11,
+      12,
+      0,
+      13,
+      0,
+      "AUDIO"
+    ],
+    [
+      28,
+      19,
+      0,
+      17,
+      1,
+      "VOXCPM_DATASET"
+    ],
+    [
+      30,
+      21,
+      0,
+      17,
+      0,
+      "VOXCPM_V2_TRAIN_CONFIG"
+    ],
+    [
+      37,
+      29,
+      0,
+      28,
+      0,
+      "AUDIO"
+    ],
+    [
+      38,
+      27,
+      0,
+      29,
+      2,
+      "STRING"
+    ],
+    [
+      39,
+      27,
+      0,
+      29,
+      3,
+      "STRING"
+    ],
+    [
+      40,
+      26,
+      0,
+      29,
+      1,
+      "AUDIO"
+    ],
+    [
+      41,
+      26,
+      0,
+      29,
+      0,
+      "AUDIO"
+    ],
+    [
+      42,
+      26,
+      0,
+      27,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "V1 Training",
+      "bounding": [
+        1025.219898257852,
+        -3384.2185381334098,
+        816.9297613548322,
+        811.9776950679626
+      ],
+      "color": "#3f789e",
+      "font_size": 40,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "V1 - TTS Cloning (optional lora loading)",
+      "bounding": [
+        1021.4415366314619,
+        -2266.8396082492304,
+        1077.9369963052807,
+        558.3049004554406
+      ],
+      "color": "#3f789e",
+      "font_size": 40,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "V2 - TTS (optional lora loading)",
+      "bounding": [
+        2144.9374385703777,
+        -2267.907755834836,
+        905.739540148214,
+        796.6560333373372
+      ],
+      "color": "#3f789e",
+      "font_size": 40,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "V2 Training",
+      "bounding": [
+        1874.4650720926256,
+        -3380.611392882877,
+        921.8368901537083,
+        867.6780528671615
+      ],
+      "color": "#3f789e",
+      "font_size": 40,
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "V2 - Voice Cloning",
+      "bounding": [
+        3095.42287339712,
+        -2267.037044135338,
+        1292.4192902766886,
+        803.9914215511565
+      ],
+      "color": "#3f789e",
+      "font_size": 40,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ue_links": [],
+    "ds": {
+      "scale": 0.5445000000000061,
+      "offset": [
+        -569.0338150710846,
+        3600.1793389510217
+      ]
+    },
+    "links_added_by_ue": [],
+    "frontendVersion": "1.41.21",
+    "VHS_latentpreview": true,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
