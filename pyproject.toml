@@ -27,6 +27,6 @@ dependencies = [
 Repository = "https://github.com/filliptm/ComfyUI-FL-VoxCPM"
 
 [tool.comfy]
-PublisherId = "filliptm"
+PublisherId = "machinedelusions"
 DisplayName = "ComfyUI-FL-VoxCPM"
 Icon = ""
