@@ -2,6 +2,7 @@ import os
 import sys
 import io as _io
 import json
+import math
 import base64
 import torch
 import torch.nn as nn
@@ -38,11 +39,21 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_for_json(obj):
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
+
+
 def send_training_update(node_id, data):
     if WEBSOCKET_AVAILABLE and PromptServer.instance is not None and node_id is not None:
         PromptServer.instance.send_sync(
             "voxcpm.training.progress",
-            {"node": str(node_id), **data},
+            _sanitize_for_json({"node": str(node_id), **data}),
         )
 
 def resolve_model_path(base_model_name: str, folder_paths_module):

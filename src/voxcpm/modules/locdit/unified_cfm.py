@@ -221,7 +221,7 @@ class UnifiedCFM(torch.nn.Module):
             u_pred = model_fn(y, r, t)
             u_tgt = v
 
-        losses = F.mse_loss(u_pred, u_tgt.detach(), reduction="none").mean(dim=1)
+        losses = F.mse_loss(u_pred.float(), u_tgt.detach().float(), reduction="none").mean(dim=1)
         if tgt_mask is not None:
             weights = self.adaptive_loss_weighting(losses, tgt_mask.squeeze(1))
             loss = (weights * losses).sum() / torch.sum(tgt_mask)

@@ -190,6 +190,11 @@ def run_lora_training_v2(
 
     base_model = base_model.to(accelerator.device)
 
+    if accelerator.device.type == "mps":
+        logger.info("MPS detected — casting model to float32 (bfloat16 produces NaN on Apple MPS).")
+        base_model.config.dtype = "float32"
+        base_model = base_model.to(torch.float32)
+
     trainable_params = [n for n, p in base_model.named_parameters() if p.requires_grad]
     logger.info(f"Detected {len(trainable_params)} trainable parameters.")
 
@@ -265,8 +270,11 @@ def run_lora_training_v2(
 
     send_training_update(node_id, {"type": "status", "message": "Starting V2 training..."})
     logger.info("Starting V2 training...")
-    pbar = ProgressBar(max_steps)
+    PBAR_TICKS = 100
+    pbar = ProgressBar(PBAR_TICKS, node_id=str(node_id) if node_id is not None else None)
+    logger.info(f"[V2] ProgressBar node_id={pbar.node_id}, hook_set={pbar.hook is not None}")
     pbar.update(0)
+    last_pbar_tick = 0
 
     train_iter = iter(train_loader)
     data_epoch = 0
@@ -345,7 +353,10 @@ def run_lora_training_v2(
                 accelerator.update()
                 scheduler.step()
 
-                pbar.update(1)
+                tick = int((step + 1) / max_steps * PBAR_TICKS)
+                if tick > last_pbar_tick:
+                    pbar.update(tick - last_pbar_tick)
+                    last_pbar_tick = tick
 
             lr_val = optimizer.param_groups[0]['lr']
             logger.info(f"[V2] Step {step}/{max_steps}, Loss: {total_loss_val:.4f}, LR: {lr_val:.8f}")
