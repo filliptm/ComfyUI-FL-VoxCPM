@@ -17,3 +17,4 @@ bitsandbytes
 argbind
 datasets
 librosa
+torchcodec
