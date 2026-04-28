@@ -16,5 +16,6 @@ tqdm
 bitsandbytes
 argbind
 datasets
+ffmpeg
 librosa
 torchcodec
