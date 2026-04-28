@@ -186,13 +186,17 @@ class VoxCPM:
 
             # Handle reference waveform (V2 ComfyUI path) — save to temp file
             if reference_waveform is not None and actual_ref_path is None:
-                import torchaudio
+                import soundfile as sf
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
                     temp_files.append(tmp.name)
                 ref_wav = reference_waveform
                 if ref_wav.dim() == 1:
                     ref_wav = ref_wav.unsqueeze(0)
-                torchaudio.save(tmp.name, ref_wav.cpu(), reference_sample_rate or self.tts_model.sample_rate)
+                # soundfile expects (samples,) or (samples, channels); torchaudio uses (channels, samples)
+                _data = ref_wav.detach().cpu().numpy()
+                if _data.ndim == 2:
+                    _data = _data.T
+                sf.write(tmp.name, _data, int(reference_sample_rate or self.tts_model.sample_rate))
                 actual_ref_path = tmp.name
 
             # Build prompt cache

@@ -82,11 +82,11 @@ def _extract_audio(audio_input):
 
 def _save_waveform_to_temp(waveform, sample_rate):
     """Save a waveform tensor to a temporary WAV file."""
-    import torchaudio
+    from ..modules.audio_io import save_audio
     if waveform.dim() == 1:
         waveform = waveform.unsqueeze(0)
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
-    torchaudio.save(tmp.name, waveform.cpu(), sample_rate)
+    save_audio(tmp.name, waveform.cpu(), sample_rate)
     tmp.close()
     return tmp.name
 

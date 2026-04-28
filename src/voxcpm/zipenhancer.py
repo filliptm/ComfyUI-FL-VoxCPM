@@ -35,10 +35,22 @@ class ZipEnhancer:
         Args:
             wav_path: Audio file path
         """
-        audio, sr = torchaudio.load(wav_path)
+        # Use soundfile for I/O instead of torchaudio.load/save (which depend
+        # on torchcodec → libavutil shared libs not present on minimal hosts).
+        import soundfile as sf
+        import numpy as _np
+        _data, sr = sf.read(wav_path, always_2d=False)
+        _arr = _np.asarray(_data, dtype=_np.float32)
+        if _arr.ndim == 1:
+            audio = torch.from_numpy(_arr).unsqueeze(0)
+        else:
+            audio = torch.from_numpy(_arr.T.copy())
         loudness = torchaudio.functional.loudness(audio, sr)
         normalized_audio = torchaudio.functional.gain(audio, -20-loudness)
-        torchaudio.save(wav_path, normalized_audio, sr)
+        _out = normalized_audio.detach().cpu().numpy()
+        if _out.ndim == 2:
+            _out = _out.T
+        sf.write(wav_path, _out, int(sr))
     
     def enhance(self, input_path: str, output_path: Optional[str] = None, 
                 normalize_loudness: bool = True) -> str:

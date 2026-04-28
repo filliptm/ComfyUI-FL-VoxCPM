@@ -78,7 +78,7 @@ def resolve_model_path(base_model_name: str, folder_paths_module):
 
 def _run_validation_audio(model, validation_text, validation_steps, sample_rate, save_dir, step, node_id):
     """Generate a validation audio sample and return base64-encoded WAV."""
-    import torchaudio
+    from .audio_io import save_audio
     was_training = model.training
     device = next(model.parameters()).device
     original_dtype = next(model.parameters()).dtype
@@ -145,13 +145,13 @@ def _run_validation_audio(model, validation_text, validation_steps, sample_rate,
         if wav_tensor.dim() == 1:
             wav_tensor = wav_tensor.unsqueeze(0)
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
-        torchaudio.save(save_path, wav_tensor, sample_rate)
+        save_audio(save_path, wav_tensor, sample_rate)
 
-        # Encode to base64 via temp file (torchaudio can't write wav to BytesIO)
+        # Encode to base64 via temp file (soundfile can't write wav to BytesIO without a name)
         import tempfile
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
             tmp_path = tmp.name
-        torchaudio.save(tmp_path, wav_tensor, sample_rate)
+        save_audio(tmp_path, wav_tensor, sample_rate)
         with open(tmp_path, 'rb') as f:
             audio_b64 = f"data:audio/wav;base64,{base64.b64encode(f.read()).decode()}"
         os.unlink(tmp_path)

@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 def _run_validation_audio_v2(model, validation_text, validation_steps, sample_rate, save_dir, step, node_id):
     """Generate a validation audio sample from V2 model."""
-    import torchaudio
+    from .audio_io import save_audio
     was_training = model.training
     device = next(model.parameters()).device
     original_dtype = next(model.parameters()).dtype
@@ -96,12 +96,12 @@ def _run_validation_audio_v2(model, validation_text, validation_steps, sample_ra
         if wav_tensor.dim() == 1:
             wav_tensor = wav_tensor.unsqueeze(0)
         save_path = os.path.join(save_dir, f"validation_step_{step}.wav")
-        torchaudio.save(save_path, wav_tensor, sample_rate)
+        save_audio(save_path, wav_tensor, sample_rate)
 
         import tempfile
         with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
             tmp_path = tmp.name
-        torchaudio.save(tmp_path, wav_tensor, sample_rate)
+        save_audio(tmp_path, wav_tensor, sample_rate)
         with open(tmp_path, 'rb') as f:
             audio_b64 = f"data:audio/wav;base64,{base64.b64encode(f.read()).decode()}"
         os.unlink(tmp_path)

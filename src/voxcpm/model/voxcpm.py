@@ -428,7 +428,18 @@ class VoxCPMModel(nn.Module):
                 audio = prompt_waveform.clone()
                 sr = prompt_sample_rate
             else:
-                audio, sr = torchaudio.load(prompt_wav_path)
+                # Use soundfile instead of torchaudio.load to avoid the
+                # libavutil.so.* dependency that torchaudio>=2 introduces
+                # via torchcodec.
+                import soundfile as sf
+                import numpy as _np
+                _data, sr = sf.read(prompt_wav_path, always_2d=False)
+                _arr = _np.asarray(_data, dtype=_np.float32)
+                if _arr.ndim == 1:
+                    audio = torch.from_numpy(_arr).unsqueeze(0)
+                else:
+                    # soundfile: (samples, channels); torchaudio: (channels, samples)
+                    audio = torch.from_numpy(_arr.T.copy())
             
             # Ensure audio is on correct device for resampling/processing if needed
             # But torchaudio resampling might prefer CPU or GPU depending on version. 
@@ -541,7 +552,15 @@ class VoxCPMModel(nn.Module):
             audio = prompt_waveform.clone()
             sr = prompt_sample_rate
         else:
-            audio, sr = torchaudio.load(prompt_wav_path)
+            # soundfile-based load — avoids torchaudio→torchcodec→libavutil dep
+            import soundfile as sf
+            import numpy as _np
+            _data, sr = sf.read(prompt_wav_path, always_2d=False)
+            _arr = _np.asarray(_data, dtype=_np.float32)
+            if _arr.ndim == 1:
+                audio = torch.from_numpy(_arr).unsqueeze(0)
+            else:
+                audio = torch.from_numpy(_arr.T.copy())
             
         # Simplified standard mix logic here as well
         if audio.dim() > 1 and audio.size(0) > 1:
